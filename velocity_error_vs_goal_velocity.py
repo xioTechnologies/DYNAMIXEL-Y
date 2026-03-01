@@ -2,6 +2,7 @@ import csv
 import time
 from pathlib import Path
 
+import cliny as cli
 import matplotlib.pyplot as plt
 import numpy as np
 from dynamixel_y import DynamixelY, scan
@@ -11,7 +12,7 @@ SERIAL_NUMBER = "SNNX13B3010044"
 
 FILE_NAME = f"{Path(__file__).stem}_{SERIAL_NUMBER}.csv"
 
-if input("Collect data? (Y/N)").lower() == "y":
+if cli.yes_or_no("Collect data?"):
     GATE_TIME = 30
 
     keysight = Keysight5322A(GATE_TIME)

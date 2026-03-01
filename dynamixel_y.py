@@ -5,7 +5,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 
-import colorama
+import cliny as cli
 import dynamixel_sdk
 import serial.tools.list_ports  # pip install pyserial
 
@@ -275,21 +275,14 @@ def scan() -> str:
 
 
 def _main() -> None:
-    colorama.init(autoreset=True)
+    set_debug_callback(lambda message: cli.print_muted(message))
 
-    set_debug_callback(lambda message: print(f"{colorama.Fore.LIGHTBLACK_EX}{message}"))
+    dynamixel_y: DynamixelY = cli.retry(lambda: DynamixelY(scan()))
 
-    dynamixel_y = DynamixelY(scan())
-
-    @dataclass(frozen=True)
-    class Command:
-        name: str
-        method: Callable[[float], None]
-
-    commands = (
-        Command("Position", dynamixel_y.set_position),
-        Command("Velocity", dynamixel_y.set_velocity),
-    )
+    commands = {
+        "Position": dynamixel_y.set_position,
+        "Velocity": dynamixel_y.set_velocity,
+    }
 
     while True:
         position = dynamixel_y.get_position()
@@ -299,24 +292,24 @@ def _main() -> None:
         inverter_temperature = dynamixel_y.get_inverter_temperature()
         motor_temperature = dynamixel_y.get_motor_temperature()
 
-        print(f"{position:.3f} deg, {velocity:.3f} deg/s, {current:.2f} A, {voltage:.1f} V, {inverter_temperature} degC, {motor_temperature} degC")
+        cli.print_special(f"{position:.3f} deg, {velocity:.3f} deg/s, {current:.2f} A, {voltage:.1f} V, {inverter_temperature} degC, {motor_temperature} degC")
 
         print("Select command")
 
-        for index, command in enumerate(commands):
-            print(f"{index}. {command.name}")
+        for index, command in enumerate(commands.keys()):
+            print(f"{index}. {command}")
 
         try:
-            command = commands[int(input())]
+            command = list(commands.values())[int(input())]
 
             print("Enter value")
 
-            command.method(float(input()))
+            command(float(input()))
 
-            print(f"{colorama.Fore.GREEN}Complete")
+            cli.print_success("Complete")
 
-        except Exception as exception:
-            print(f"{colorama.Fore.RED}{exception}")
+        except Exception as ex:
+            cli.print_error(ex)
             continue
 
 
