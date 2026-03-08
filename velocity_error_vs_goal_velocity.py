@@ -8,7 +8,7 @@ import numpy as np
 from dynamixel_y import DynamixelY, scan
 from keysight_5322A import Keysight5322A
 
-SERIAL_NUMBER = "SNNX13B3010044"
+SERIAL_NUMBER = "SNNX13B3010045"
 
 FILE_NAME = f"{Path(__file__).stem}_{SERIAL_NUMBER}.csv"
 

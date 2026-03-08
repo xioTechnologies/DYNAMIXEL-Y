@@ -7,3 +7,7 @@ Includes velocity error investigations, with velocity errors measured using an o
 ![](velocity_erorr_vs_temperature_SNNX13B3010044.png)
 
 ![](velocity_error_vs_goal_velocity_SNNX13B3010044.png)
+
+![](velocity_erorr_vs_temperature_SNNX13B3010045.png)
+
+![](velocity_error_vs_goal_velocity_SNNX13B3010045.png)
