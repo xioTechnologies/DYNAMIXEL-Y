@@ -2,7 +2,7 @@ import time
 
 from dynamixel_y import DynamixelY, scan
 
-dynamixel_y = DynamixelY(scan())
+dynamixel_y = DynamixelY(*scan())
 
 number_of_samples = 0
 last_print = time.perf_counter()

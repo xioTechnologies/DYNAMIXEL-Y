@@ -96,8 +96,8 @@ class DynamixelY:
 
     __PULSES_PER_DEGREE = 524_288 / 360
 
-    def __init__(self, port_name: str) -> None:
-        self.__ID = 1
+    def __init__(self, id: int, port_name: str) -> None:
+        self.__id = id
 
         self.__port = dynamixel_sdk.PortHandler(port_name)
 
@@ -109,9 +109,9 @@ class DynamixelY:
         if not self.__port.setBaudRate(1_000_000):
             raise Exception("Unable to set baud rate")
 
-        _, result, error = self.__packet.ping(self.__port, self.__ID)
+        _, result, error = self.__packet.ping(self.__port, self.__id)
 
-        self.__check_response(f"Ping failed for {self.__port.getPortName()} at {self.__port.getBaudRate()} baud", result, error)
+        self.__check_response(f"Ping failed for ID {self.__id} on {self.__port.getPortName()} at {self.__port.getBaudRate()} baud", result, error)
 
         self.__torque_enable()
 
@@ -229,7 +229,7 @@ class DynamixelY:
             case 4:
                 read = self.__packet.read4ByteTxRx
 
-        value, result, error = read(self.__port, self.__ID, register.address)
+        value, result, error = read(self.__port, self.__id, register.address)
 
         self.__check_response(f"Read failed for {register.name}", result, error)
 
@@ -247,7 +247,7 @@ class DynamixelY:
             case 4:
                 write = self.__packet.write4ByteTxRx
 
-        result, error = write(self.__port, self.__ID, register.address, value)
+        result, error = write(self.__port, self.__id, register.address, value)
 
         self.__check_response(f"Write failed for {register.name}, {value}", result, error)
 
@@ -259,17 +259,22 @@ class DynamixelY:
             raise Exception(f"{message}. {self.__packet.getRxPacketError(error)}")
 
 
-def scan() -> str:
-    port_names = [p.name for p in serial.tools.list_ports.comports()]
+def scan(id: int | None = None) -> tuple[int, str]:
+    ids = (1, 2) if id is None else (id,)
 
-    for port_name in port_names:
-        try:
-            DynamixelY(port_name).close()
+    port_names = tuple(p.name for p in serial.tools.list_ports.comports())
 
-            return port_name
+    for id in ids:
+        for port_name in port_names:
+            try:
+                DynamixelY(id, port_name).close()
 
-        except Exception:
-            pass
+                _debug_print(f"Found ID {id} on {port_name}")
+
+                return id, port_name
+
+            except Exception as ex:
+                _debug_print(ex)
 
     raise Exception("DYNAMIXEL-Y not found")
 
@@ -277,7 +282,7 @@ def scan() -> str:
 def _main() -> None:
     set_debug_callback(lambda message: cli.print_muted(message))
 
-    dynamixel_y: DynamixelY = cli.retry(lambda: DynamixelY(scan()))
+    dynamixel_y: DynamixelY = cli.retry(lambda: DynamixelY(*scan()))
 
     commands = {
         "Position": dynamixel_y.set_position,

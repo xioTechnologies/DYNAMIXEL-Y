@@ -17,7 +17,7 @@ if cli.yes_or_no("Collect data?"):
 
     keysight = Keysight5322A(GATE_TIME)
 
-    dynamixel_y = DynamixelY(scan())
+    dynamixel_y = DynamixelY(*scan())
 
     plt.ion()
 
