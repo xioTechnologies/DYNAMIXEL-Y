@@ -30,11 +30,11 @@ class _Register:
 
 _OPERATING_MODE = _Register("OPERATING_MODE", 33, 1)
 
-_VELCOITY_LIMIT = _Register("_VELCOITY_LIMIT", 72, 4)
+_VELOCITY_LIMIT = _Register("VELOCITY_LIMIT", 72, 4)
 
-_PROFILE_VELCOITY = _Register("_PROFILE_VELCOITY", 244, 4)
+_PROFILE_VELOCITY = _Register("PROFILE_VELOCITY", 244, 4)
 
-_CONTROLLER_STATE = _Register("_CONTROLLER_STATE", 152, 1)
+_CONTROLLER_STATE = _Register("CONTROLLER_STATE", 152, 1)
 
 _TORQUE_ENABLE = _Register("TORQUE_ENABLE", 512, 1)
 
@@ -82,17 +82,17 @@ def _retry(func: Callable[..., Any]) -> Callable[..., Any]:
             try:
                 return func(*args, **kwargs)
 
-            except Exception as exception:
+            except Exception as ex:
                 if time.perf_counter() >= timeout:
                     raise
 
-                _debug_print(exception)
+                _debug_print(ex)
 
     return wrapper
 
 
 class DynamixelY:
-    __CRPMS_PER_DEGREES_PER_SECOND = 1 / 0.06  # CRPM = 0.01 rev/min
+    __CRPM_PER_DEGREES_PER_SECOND = 1 / 0.06  # CRPM = 0.01 rev/min
 
     __PULSES_PER_DEGREE = 524_288 / 360
 
@@ -124,10 +124,10 @@ class DynamixelY:
         return self.__read(_PRESENT_POSITION) / DynamixelY.__PULSES_PER_DEGREE
 
     def set_position(self, degrees: float, degrees_per_second: float | None = None, block: bool = True) -> float:
-        if not degrees_per_second:
-            self.__write(_PROFILE_VELCOITY, self.__read(_VELCOITY_LIMIT))
+        if degrees_per_second is None:
+            self.__write(_PROFILE_VELOCITY, self.__read(_VELOCITY_LIMIT))
         else:
-            self.__write(_PROFILE_VELCOITY, round(abs(degrees_per_second) * DynamixelY.__CRPMS_PER_DEGREES_PER_SECOND))
+            self.__write(_PROFILE_VELOCITY, round(abs(degrees_per_second) * DynamixelY.__CRPM_PER_DEGREES_PER_SECOND))
 
         self.__set_operating_mode(_OperatingMode.POSITION)
 
@@ -151,14 +151,14 @@ class DynamixelY:
         return degrees
 
     def get_velocity(self) -> float:
-        return self.__read(_PRESENT_VELOCITY) / DynamixelY.__CRPMS_PER_DEGREES_PER_SECOND
+        return self.__read(_PRESENT_VELOCITY) / DynamixelY.__CRPM_PER_DEGREES_PER_SECOND
 
     def set_velocity(self, degrees_per_second: float, block: bool = True) -> float:
         self.__set_operating_mode(_OperatingMode.VELOCITY)
 
-        goal_velocity = round(degrees_per_second * DynamixelY.__CRPMS_PER_DEGREES_PER_SECOND)
+        goal_velocity = round(degrees_per_second * DynamixelY.__CRPM_PER_DEGREES_PER_SECOND)
 
-        degrees_per_second = goal_velocity / DynamixelY.__CRPMS_PER_DEGREES_PER_SECOND
+        degrees_per_second = goal_velocity / DynamixelY.__CRPM_PER_DEGREES_PER_SECOND
 
         self.__write(_GOAL_VELOCITY, goal_velocity)
 
@@ -170,7 +170,7 @@ class DynamixelY:
         while True:
             present_velocity = self.__read(_PRESENT_VELOCITY)
 
-            _debug_print(f"{present_velocity / DynamixelY.__CRPMS_PER_DEGREES_PER_SECOND} deg/s")
+            _debug_print(f"{present_velocity / DynamixelY.__CRPM_PER_DEGREES_PER_SECOND} deg/s")
 
             if velocity_increased:
                 if present_velocity >= goal_velocity:
